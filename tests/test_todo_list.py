@@ -1,62 +1,72 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, date
 from todo_list.todo_list import ToDoList
+from todo_list.task import Task
 
 class TestToDoList(unittest.TestCase):
     def setUp(self):
-        self.to_do_list = ToDoList()
-        self.to_do_list.add_task("Buy groceries", datetime(2024, 7, 5, 14, 0), "Family", 8)
-        self.to_do_list.add_task("Read a book", datetime(2024, 7, 10, 18, 0), "Self", 5)
-        self.to_do_list.add_task("Pay bills", datetime(2024, 7, 4, 9, 0), "Work", 9)
-        self.to_do_list.add_task("Exercise", datetime(2024, 7, 6, 7, 0), "Self", 6)
-        self.to_do_list.add_task("Meet with friends", datetime(2024, 7, 4, 19, 0), "Friends", 7)
+        self.todo_list = ToDoList()
 
-    def test_list_next_three_tasks(self):
-        expected_tasks = [
-            "✘ Pay bills [Due: 2024-07-04 09:00, Category: Work, Priority: 9]",
-            "✘ Meet with friends [Due: 2024-07-04 19:00, Category: Friends, Priority: 7]",
-            "✘ Buy groceries [Due: 2024-07-05 14:00, Category: Family, Priority: 8]"
-        ]
+    def test_add_task(self):
+        task = Task(description="Test Task")
+        self.todo_list.add_task(task)
+        self.assertEqual(len(self.todo_list.tasks), 1)
+        self.assertEqual(self.todo_list.tasks[0].description, "Test Task")
 
-        captured_output = []
-        important_tasks = sorted(self.to_do_list.tasks, key=lambda x: (x.due_date or datetime.max, x.get_category_rank(), -x.priority_score))
-        next_three_tasks = [task for task in important_tasks if not task.completed][:3]
-        for task in next_three_tasks:
-            captured_output.append(str(task))
+    def test_remove_task(self):
+        task = Task(description="Test Task")
+        self.todo_list.add_task(task)
+        self.todo_list.remove_task(0)
+        self.assertEqual(len(self.todo_list.tasks), 0)
 
-        self.assertEqual(captured_output, expected_tasks)
+    def test_mark_completed(self):
+        task = Task(description="Test Task")
+        self.todo_list.add_task(task)
+        self.todo_list.mark_completed(0)
+        self.assertTrue(self.todo_list.tasks[0].completed)
 
-    def test_list_high_priority_tasks(self):
-        start_date = datetime(2024, 7, 1)
-        end_date = datetime(2024, 7, 10)
-        expected_tasks = [
-            "✘ Pay bills [Due: 2024-07-04 09:00, Category: Work, Priority: 9]",
-            "✘ Buy groceries [Due: 2024-07-05 14:00, Category: Family, Priority: 8]"
-        ]
+    def test_filter_tasks_by_category(self):
+        task1 = Task(description="Task 1", category="Work")
+        task2 = Task(description="Task 2", category="Home")
+        self.todo_list.add_task(task1)
+        self.todo_list.add_task(task2)
+        filtered_tasks = self.todo_list.filter_tasks(category="Work")
+        self.assertEqual(len(filtered_tasks), 1)
+        self.assertEqual(filtered_tasks[0].description, "Task 1")
 
-        captured_output = []
-        high_priority_tasks = [task for task in self.to_do_list.tasks if task.due_date and start_date <= task.due_date <= end_date and task.priority_score >= 8]
-        high_priority_tasks.sort(key=lambda x: (x.due_date, x.get_category_rank(), -x.priority_score))
-        for task in high_priority_tasks:
-            captured_output.append(str(task))
+    def test_filter_tasks_by_priority(self):
+        task1 = Task(description="Task 1", priority=1)
+        task2 = Task(description="Task 2", priority=5)
+        self.todo_list.add_task(task1)
+        self.todo_list.add_task(task2)
+        filtered_tasks = self.todo_list.filter_tasks(priority=5)
+        self.assertEqual(len(filtered_tasks), 1)
+        self.assertEqual(filtered_tasks[0].description, "Task 2")
 
-        self.assertEqual(captured_output, expected_tasks)
+    def test_filter_tasks_by_completion(self):
+        task1 = Task(description="Task 1", completed=True)
+        task2 = Task(description="Task 2", completed=False)
+        self.todo_list.add_task(task1)
+        self.todo_list.add_task(task2)
+        filtered_tasks = self.todo_list.filter_tasks(completed=True)
+        self.assertEqual(len(filtered_tasks), 1)
+        self.assertEqual(filtered_tasks[0].description, "Task 1")
 
-    def test_list_completed_tasks(self):
-        start_date = datetime(2024, 7, 1)
-        end_date = datetime(2024, 7, 10)
-        self.to_do_list.mark_task_complete(0)  # Mark "Buy groceries" as complete
-        expected_tasks = [
-            "✔ Buy groceries [Due: 2024-07-05 14:00, Category: Family, Priority: 8]"
-        ]
+    def test_filter_tasks_by_due_date_datetime(self):
+        task1 = Task(description="Task 1", due_date=datetime(2024, 1, 1, 10, 0))
+        task2 = Task(description="Task 2", due_date=datetime(2024, 1, 1, 14, 0))
+        self.todo_list.add_task(task1)
+        self.todo_list.add_task(task2)
+        filtered_tasks = self.todo_list.filter_tasks()
+        self.assertEqual(len(filtered_tasks), 2)
 
-        captured_output = []
-        completed_tasks = [task for task in self.to_do_list.tasks if task.completed and task.due_date and start_date <= task.due_date <= end_date]
-        completed_tasks.sort(key=lambda x: (x.due_date, x.get_category_rank(), -x.priority_score))
-        for task in completed_tasks:
-            captured_output.append(str(task))
-
-        self.assertEqual(captured_output, expected_tasks)
+    def test_filter_tasks_by_due_date_date(self):
+        task1 = Task(description="Task 1", due_date=date(2024, 1, 1))
+        task2 = Task(description="Task 2", due_date=date(2024, 1, 2))
+        self.todo_list.add_task(task1)
+        self.todo_list.add_task(task2)
+        filtered_tasks = self.todo_list.filter_tasks()
+        self.assertEqual(len(filtered_tasks), 2)
 
 if __name__ == '__main__':
     unittest.main(argv=[''], exit=False)

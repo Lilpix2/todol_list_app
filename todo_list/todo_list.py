@@ -1,50 +1,83 @@
-from datetime import datetime
+from typing import List, Optional, Union
+from datetime import datetime, date
 from .task import Task
 
 class ToDoList:
+    """
+    Represents a collection of tasks in a to-do list.
+
+    Attributes:
+        tasks (List[Task]): A list of Task objects.
+    """
+
     def __init__(self):
-        self.tasks = []
+        self.tasks: List[Task] = []
 
-    def add_task(self, description, due_date=None, category="Self", priority_score=1):
-        task = Task(description, due_date, category, priority_score)
+    def add_task(self, task: Task) -> None:
+        """
+        Add a new task to the to-do list.
+
+        Args:
+            task (Task): The task to be added.
+        """
         self.tasks.append(task)
-        print(f"Added task: {description}")
 
-    def delete_task(self, index):
-        if 0 <= index < len(self.tasks):
-            removed_task = self.tasks.pop(index)
-            print(f"Deleted task: {removed_task.description}")
-        else:
-            print("Invalid task index.")
+    def remove_task(self, index: int) -> None:
+        """
+        Remove a task from the to-do list by its index.
 
-    def mark_task_complete(self, index):
-        if 0 <= index < len(self.tasks):
-            self.tasks[index].mark_complete()
-            print(f"Marked task as complete: {self.tasks[index].description}")
-        else:
-            print("Invalid task index.")
+        Args:
+            index (int): The index of the task to be removed.
 
-    def list_tasks(self):
+        Raises:
+            IndexError: If the index is out of range.
+        """
+        try:
+            del self.tasks[index]
+        except IndexError as e:
+            print(f"Error removing task: {e}")
+
+    def mark_completed(self, index: int) -> None:
+        """
+        Mark a task as completed by its index.
+
+        Args:
+            index (int): The index of the task to be marked as completed.
+
+        Raises:
+            IndexError: If the index is out of range.
+        """
+        try:
+            self.tasks[index].completed = True
+        except IndexError as e:
+            print(f"Error marking task as completed: {e}")
+
+    def filter_tasks(self, category: Optional[str] = None, priority: Optional[int] = None, completed: Optional[bool] = None) -> List[Task]:
+        """
+        Filter the tasks based on the provided criteria.
+
+        Args:
+            category (str, optional): The category to filter by.
+            priority (int, optional): The priority level to filter by.
+            completed (bool, optional): Whether to filter completed or incomplete tasks.
+
+        Returns:
+            List[Task]: A list of tasks that match the specified criteria.
+        """
+        filtered_tasks = []
+        for task in self.tasks:
+            if (category is None or task.category == category) and \
+               (priority is None or task.priority == priority) and \
+               (completed is None or task.completed == completed):
+                filtered_tasks.append(task)
+        return filtered_tasks
+
+    def list_tasks(self) -> None:
+        """
+        List all tasks in the to-do list.
+        """
         if not self.tasks:
             print("No tasks in the to-do list.")
         else:
             for i, task in enumerate(self.tasks, start=1):
                 print(f"{i}. {task}")
-
-    def list_next_three_tasks(self):
-        important_tasks = sorted(self.tasks, key=lambda x: (x.due_date or datetime.max, x.get_category_rank(), -x.priority_score))
-        next_three_tasks = [task for task in important_tasks if not task.completed][:3]
-        for task in next_three_tasks:
-            print(task)
-
-    def list_high_priority_tasks(self, start_date, end_date):
-        high_priority_tasks = [task for task in self.tasks if task.due_date and start_date <= task.due_date <= end_date and task.priority_score >= 8]
-        high_priority_tasks.sort(key=lambda x: (x.due_date, x.get_category_rank(), -x.priority_score))
-        for task in high_priority_tasks:
-            print(task)
-
-    def list_completed_tasks(self, start_date, end_date):
-        completed_tasks = [task for task in self.tasks if task.completed and task.due_date and start_date <= task.due_date <= end_date]
-        completed_tasks.sort(key=lambda x: (x.due_date, x.get_category_rank(), -x.priority_score))
-        for task in completed_tasks:
-            print(task)

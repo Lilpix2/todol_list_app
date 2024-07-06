@@ -1,10 +1,4 @@
-from gui.gui import ToDoListGUI
-import tkinter as tk
-
-def main():
-    root = tk.Tk()
-    app = ToDoListGUI(root)
-    root.mainloop()
+from gui import main
 
 if __name__ == "__main__":
     main()

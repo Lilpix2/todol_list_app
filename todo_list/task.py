@@ -1,45 +1,84 @@
-from datetime import datetime
+from datetime import datetime, date
+from typing import Union, Optional
 
 class Task:
-    CATEGORY_RANKING = {
-        "Self": 1,
-        "Family": 2,
-        "School": 3,
-        "Work": 4,
-        "Friends": 5,
-        "Hobbies": 6
-    }
+    """
+    Represents a single task in a to-do list.
 
-    def __init__(self, description, due_date=None, category="Self", priority_score=1):
+    Attributes:
+        description (str): A brief description of the task.
+        due_date (Union[datetime, date]): The due date for the task.
+        category (str): The category or context of the task.
+        priority (int): The priority level of the task (1-10, with 10 being the highest).
+        completed (bool): Whether the task has been completed or not.
+    """
+
+    def __init__(self, description: str, due_date: Optional[Union[datetime, date]] = None, category: str = "General",
+                 priority: int = 3, completed: bool = False):
         self.description = description
-        self.completed = False
         self.due_date = due_date
         self.category = category
-        self.priority_score = priority_score
+        self.priority = priority
+        self.completed = completed
 
-    def mark_complete(self):
-        self.completed = True
+    def to_dict(self) -> dict:
+        """
+        Convert the Task object to a dictionary representation.
 
-    def to_dict(self):
+        Returns:
+            dict: A dictionary containing the task's attributes.
+        """
         return {
             "description": self.description,
-            "completed": self.completed,
             "due_date": self.due_date.isoformat() if self.due_date else None,
             "category": self.category,
-            "priority_score": self.priority_score
+            "priority": self.priority,
+            "completed": self.completed
         }
 
     @classmethod
-    def from_dict(cls, data):
-        due_date = datetime.fromisoformat(data["due_date"]) if data["due_date"] else None
-        task = cls(data["description"], due_date, data["category"], data["priority_score"])
-        task.completed = data["completed"]
-        return task
+    def from_dict(cls, task_dict: dict) -> "Task":
+        """
+        Create a Task object from a dictionary representation.
 
-    def __str__(self):
-        status = "✔" if self.completed else "✘"
-        due_date_str = self.due_date.strftime("%Y-%m-%d %H:%M") if self.due_date else "No due date"
-        return f"{status} {self.description} [Due: {due_date_str}, Category: {self.category}, Priority: {self.priority_score}]"
+        Args:
+            task_dict (dict): A dictionary containing the task's attributes.
 
-    def get_category_rank(self):
-        return self.CATEGORY_RANKING.get(self.category, 7)  # Default rank if category not found
+        Returns:
+            Task: A Task object created from the dictionary.
+        """
+        due_date_str = task_dict.get("due_date")
+        if due_date_str:
+            try:
+                due_date = datetime.fromisoformat(due_date_str)
+                if due_date.time() == datetime.min.time():
+                    due_date = due_date.date()
+            except ValueError:
+                due_date = date.fromisoformat(due_date_str)
+        else:
+            due_date = None
+
+        return cls(
+            description=task_dict["description"],
+            due_date=due_date,
+            category=task_dict["category"],
+            priority=task_dict["priority"],
+            completed=task_dict["completed"]
+        )
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the Task object.
+
+        Returns:
+            str: A string representation of the Task object.
+        """
+        if isinstance(self.due_date, datetime):
+            due_date_str = self.due_date.strftime("%Y-%m-%d %H:%M")
+        elif isinstance(self.due_date, date):
+            due_date_str = self.due_date.strftime("%Y-%m-%d")
+        else:
+            due_date_str = "No due date"
+
+        completed_str = "Completed" if self.completed else "Not completed"
+        return f"{self.description} ({due_date_str}) - {self.category} - Priority: {self.priority} - {completed_str}"
